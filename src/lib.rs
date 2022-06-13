@@ -1,8 +1,10 @@
+use std::ops::Deref;
+
 use gloo::console::log;
 use serde::{Deserialize, Serialize};
 use stylist::{css, style, yew::styled_component, Style};
 use yew::prelude::*;
-
+use yew::ContextProvider;
 mod components;
 use components::atoms::main_title::{Color, MainTitle};
 use components::molecules::custom_form::CustomForm;
@@ -16,9 +18,15 @@ struct MyObject {
     favorite_language: String,
 }
 
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct User {
+    pub username: String,
+    pub favorite_language: String,
+}
 // #[function_component(App)]
 #[styled_component(App)]
 pub fn app() -> Html {
+    let user_state = use_state(User::default);
     let stylesheet = Style::new(STYLE_FILE).unwrap();
     let name = "brooks";
     let my_object = MyObject {
@@ -34,13 +42,23 @@ pub fn app() -> Html {
     let tasks = vec!["record video", "grocery shopping", "pet"];
 
     let main_title_load = Callback::from(|message: String| log!(message));
-    let custom_form_submit = Callback::from(|data: Data| {
-        log!("username is ", data.username);
-        log!("favorite language is ", data.favorite_language);
-    });
+    let custom_form_submit = {
+        let user_state = user_state.clone();
+        Callback::from(move |data: Data| {
+            let mut user = user_state.deref().clone();
+            user.username = data.username;
+            user.favorite_language = data.favorite_language;
+            user_state.set(user);
+        })
+    };
+
+    // let user = User {
+    //     username: "judi".to_owned(),
+    //     favorite_language: "rust".to_owned(),
+    // };
 
     html! {
-        <>
+        <ContextProvider<User> context={user_state.deref().clone()}>
             <div class={stylesheet}>
                 <MainTitle title="hi there" color={Color::Error} on_load={main_title_load}/>
                 <CustomForm onsubmit={custom_form_submit}/>
@@ -63,7 +81,7 @@ pub fn app() -> Html {
                     {list_to_html(tasks)}
                 </ul>
             </div>
-        </>
+        </ContextProvider<User>>
     }
 }
 
