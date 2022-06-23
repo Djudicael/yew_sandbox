@@ -6,10 +6,13 @@ use stylist::{css, style, yew::styled_component, Style};
 use yew::prelude::*;
 use yew::ContextProvider;
 mod components;
+mod router;
 use components::atoms::main_title::{Color, MainTitle};
 use components::molecules::custom_form::CustomForm;
+use yew_router::prelude::*;
 
 use crate::components::molecules::custom_form::Data;
+use crate::router::{switch, Router};
 
 const STYLE_FILE: &str = include_str!("main.css");
 #[derive(Serialize, Deserialize)]
@@ -42,6 +45,23 @@ pub fn app() -> Html {
     let tasks = vec!["record video", "grocery shopping", "pet"];
 
     let main_title_load = Callback::from(|message: String| log!(message));
+    let first_load = use_state(|| true);
+
+    use_effect(move || {
+        //this code will run on :
+        // - first render
+        //- all re-render
+        // if auth token exists and if its our first render
+        // get all users todo tasks
+        if *first_load {
+            // this only run when the component loads for the first time
+            // this shouldnt run every time we refresh state and re render
+
+            first_load.set(false);
+        }
+
+        || {}
+    });
     let custom_form_submit = {
         let user_state = user_state.clone();
         Callback::from(move |data: Data| {
@@ -81,6 +101,9 @@ pub fn app() -> Html {
                     {list_to_html(tasks)}
                 </ul>
             </div>
+            <BrowserRouter>
+                <Switch<Router> render={Switch::render(switch)}/>
+            </BrowserRouter>
         </ContextProvider<User>>
     }
 }
